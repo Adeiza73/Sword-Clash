@@ -67,7 +67,24 @@ const player = new Fighter({
             imageSrc: './img/samuraiMack/Attack1.png',
             framesMax: 6
         },
+        takeHit: {
+            imageSrc: './img/samuraiMack/Take hit - white silhouette.png',
+            framesMax: 4
+        },
+        death: {
+            imageSrc: './img/samuraiMack/Death.png',
+            framesMax: 6
+        }
 
+    },
+
+    attackBox: {
+        offset: {
+            x: 140,
+            y: 50
+        },
+        width: 100,
+        height: 50
     }
 })
  
@@ -111,8 +128,25 @@ const enemy = new Fighter({
         attack1: {
             imageSrc: './img/kenji/Attack1.png',
             framesMax: 4
+        }, 
+        takeHit : {
+            imageSrc: './img/kenji/Take hit.png',
+            framesMax: 3
         },
+        death: {
+            imageSrc: './img/kenji/Death.png',
+            framesMax: 7
+        }
 
+    },
+
+    attackBox: {
+        offset: {
+            x: -130,
+            y: 50
+        },
+        width: 130,
+        height: 50
     }
 })
  
@@ -147,6 +181,8 @@ function animate() {
     context.fillRect(0, 0, canvas.width, canvas.height)
     background.update()
     shop.update()
+    context.fillStyle = 'rgba(255, 255, 255, 0.15)'
+    context.fillRect( 0, 0, canvas.width, canvas.height)
     player.update()
     enemy.update()
 
@@ -190,26 +226,43 @@ function animate() {
         enemy.switchSprite('fall')
     }
 
-    // detect for collision; Player
+    // detect for collison; Player && Enemy gets hit
     if ( rectangularCollision({
         rectangle1: player,
         rectangle2: enemy
     }) &&
-        player.isAttacking) {
+        player.isAttacking && player.framesCurrent === 4) {
+        enemy.takeHit()
         player.isAttacking = false
-        enemy.health -= 20
-        document.querySelector('#enemyHealth').style.width = enemy.health + '%';
+        gsap.to('#enemyHealth', {
+            width: enemy.health + '%'
+        })
     }
 
-    // detect for collision; Enemy
+    // if player misses
+
+    if ( player.isAttacking && player.framesCurrent === 4) {
+        player.isAttacking = false
+    }
+
+    // detect for collision; Enemy && Player gets hit
     if ( rectangularCollision({
         rectangle1: enemy,
         rectangle2: player
     }) &&
-        enemy.isAttacking) {
+        enemy.isAttacking && enemy.framesCurrent === 2) {
+        player.takeHit()
         enemy.isAttacking = false
-        player.health -= 20
-        document.querySelector('#playerHealth').style.width = player.health + '%';
+        gsap.to('#playerHealth', {
+            width: player.health + '%'
+        })
+       
+    }
+
+    // if enemy misses
+
+    if ( enemy.isAttacking && enemy.framesCurrent === 2) {
+        enemy.isAttacking = false
     }
 
     // end the game based on health
@@ -221,6 +274,7 @@ function animate() {
 animate()
 
 window.addEventListener('keydown', (event) => {
+    if( !player.dead) {
     switch (event.key) {
     case 'd':
         keys.d.pressed = true;
@@ -236,23 +290,27 @@ window.addEventListener('keydown', (event) => {
     case ' ':
         player.attack()
         break;
-
-        
-    case 'ArrowRight':
-        keys.ArrowRight.pressed = true;
-        enemy.lastKey = 'ArrowRight';
-        break;
-    case 'ArrowLeft':
-        keys.ArrowLeft.pressed = true;
-        enemy.lastKey = 'ArrowLeft';
-        break;
-    case 'ArrowUp':
-        enemy.velocity.y = -20;
-        break;
-    case 'ArrowDown':
-        enemy.attack()
-        break;
     }
+}
+
+    if (!enemy.dead) {
+    switch (event.key) {
+        case 'ArrowRight':
+            keys.ArrowRight.pressed = true;
+            enemy.lastKey = 'ArrowRight';
+            break;
+        case 'ArrowLeft':
+            keys.ArrowLeft.pressed = true;
+            enemy.lastKey = 'ArrowLeft';
+            break;
+        case 'ArrowUp':
+            enemy.velocity.y = -20;
+            break;
+        case 'ArrowDown':
+            enemy.attack()
+            break;
+    }
+}
 })
 
 window.addEventListener('keyup', (event) => {
